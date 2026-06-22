@@ -1,0 +1,1553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevNotebook AI</title>
+  <style>
+    :root {
+      --bg: #eef2f7;
+      --panel: #ffffff;
+      --header: #172033;
+      --primary: #2563eb;
+      --primary-dark: #1d4ed8;
+      --success: #16a34a;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --muted: #64748b;
+      --border: #dbe3ee;
+      --user: #dbeafe;
+      --assistant: #f1f5f9;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: #0f172a;
+    }
+
+    body { overflow: hidden; }
+
+    button, input, textarea { font: inherit; }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 9px 13px;
+      cursor: pointer;
+      transition: 0.18s ease;
+    }
+
+    button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-dark); }
+    .btn-success { background: var(--success); color: white; }
+    .btn-warning { background: #f59e0b; color: #111827; }
+    .btn-secondary { background: #e2e8f0; color: #0f172a; }
+    .btn-danger { background: var(--danger); color: white; }
+
+    .app-header {
+      height: 76px;
+      background: var(--header);
+      color: white;
+      display: grid;
+      grid-template-columns: 230px minmax(320px, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+      padding: 12px 18px;
+      box-shadow: var(--shadow);
+      position: relative;
+      z-index: 5;
+    }
+
+    .brand h1 {
+      font-size: 20px;
+      margin: 0;
+      line-height: 1.1;
+    }
+
+    .brand small {
+      display: block;
+      color: #aebbd0;
+      margin-top: 4px;
+      font-size: 12px;
+    }
+
+    .api-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 9px;
+      align-items: center;
+    }
+
+    .api-input-wrap {
+      position: relative;
+    }
+
+    .api-input-wrap input {
+      width: 100%;
+      height: 42px;
+      border: 1px solid #46546b;
+      border-radius: 9px;
+      padding: 0 42px 0 12px;
+      background: #ffffff;
+      color: #111827;
+      outline: none;
+    }
+
+    .api-input-wrap input:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    }
+
+    #apiIndicator {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 18px;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      white-space: nowrap;
+    }
+
+    .status-bar {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      border-bottom: 1px solid var(--border);
+      background: #ffffff;
+      color: var(--muted);
+      font-size: 12px;
+      gap: 8px;
+    }
+
+    .status-bar.error { color: var(--danger); background: #fff1f2; }
+    .status-bar.success { color: #166534; background: #f0fdf4; }
+    .status-bar.warning { color: #92400e; background: #fffbeb; }
+
+    .app-main {
+      height: calc(100vh - 108px);
+      display: grid;
+      grid-template-columns: 255px minmax(420px, 1fr) 390px;
+      min-height: 0;
+    }
+
+    .panel {
+      background: var(--panel);
+      min-height: 0;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    .panel:last-child { border-right: 0; }
+
+    .panel-header {
+      min-height: 56px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      background: #ffffff;
+    }
+
+    .panel-header h2 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .panel-header small { color: var(--muted); }
+
+    .documents-panel {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .upload-box {
+      margin: 12px;
+      padding: 16px 12px;
+      border: 2px dashed #9eb0c8;
+      border-radius: 12px;
+      text-align: center;
+      background: #f8fafc;
+    }
+
+    .upload-box.dragging {
+      border-color: var(--primary);
+      background: #eff6ff;
+    }
+
+    .upload-box p {
+      margin: 0 0 8px;
+      font-size: 13px;
+      color: #334155;
+    }
+
+    .upload-box small {
+      color: var(--muted);
+      display: block;
+      margin-top: 7px;
+    }
+
+    #pdfInput { display: none; }
+
+    .file-list {
+      flex: 1;
+      overflow: auto;
+      padding: 0 10px 12px;
+    }
+
+    .file-item {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-top: 9px;
+      padding: 10px;
+      cursor: pointer;
+      background: #ffffff;
+      transition: 0.15s ease;
+    }
+
+    .file-item:hover { border-color: #93c5fd; background: #f8fbff; }
+    .file-item.active { border-color: var(--primary); background: #eff6ff; }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 650;
+      overflow-wrap: anywhere;
+    }
+
+    .file-meta {
+      margin-top: 5px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .file-error {
+      margin-top: 5px;
+      color: var(--danger);
+      font-size: 11px;
+    }
+
+    .viewer-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .viewer-toolbar {
+      min-height: 56px;
+      padding: 8px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      background: #ffffff;
+    }
+
+    .viewer-title {
+      min-width: 0;
+      font-weight: 650;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .viewer-controls {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .viewer-controls button {
+      padding: 7px 10px;
+    }
+
+    #pageInfo {
+      min-width: 82px;
+      text-align: center;
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .viewer-body {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 18px;
+      background: #cfd8e5;
+    }
+
+    .viewer-placeholder {
+      align-self: center;
+      text-align: center;
+      color: #475569;
+      background: rgba(255,255,255,0.88);
+      border-radius: 14px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    #pdfCanvas {
+      display: none;
+      background: white;
+      box-shadow: 0 10px 35px rgba(15, 23, 42, 0.2);
+      max-width: none;
+    }
+
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .chat-messages {
+      flex: 1;
+      min-height: 0;
+      overflow: auto;
+      padding: 14px;
+      background: #fbfdff;
+    }
+
+    .message {
+      max-width: 94%;
+      margin: 0 0 12px;
+      padding: 11px 12px;
+      border-radius: 12px;
+      line-height: 1.48;
+      font-size: 13px;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .message.user {
+      margin-left: auto;
+      background: var(--user);
+      border-bottom-right-radius: 4px;
+    }
+
+    .message.assistant {
+      margin-right: auto;
+      background: var(--assistant);
+      border-bottom-left-radius: 4px;
+    }
+
+    .message.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .message .label {
+      display: block;
+      font-size: 10px;
+      font-weight: 750;
+      text-transform: uppercase;
+      letter-spacing: .04em;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .quick-actions {
+      padding: 9px 12px 0;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      border-top: 1px solid var(--border);
+      background: #ffffff;
+    }
+
+    .quick-actions button {
+      font-size: 11px;
+      padding: 6px 8px;
+      background: #eef2ff;
+      color: #3730a3;
+    }
+
+    .chat-compose {
+      padding: 10px 12px 12px;
+      background: #ffffff;
+    }
+
+    .chat-compose textarea {
+      width: 100%;
+      min-height: 84px;
+      max-height: 160px;
+      resize: vertical;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+      outline: none;
+    }
+
+    .chat-compose textarea:focus {
+      border-color: #60a5fa;
+      box-shadow: 0 0 0 3px rgba(96, 165, 250, .16);
+    }
+
+    .compose-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 8px;
+      gap: 8px;
+    }
+
+    .compose-actions small {
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    .loader {
+      width: 15px;
+      height: 15px;
+      border: 2px solid #cbd5e1;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      display: inline-block;
+      animation: spin .8s linear infinite;
+      vertical-align: -3px;
+      margin-right: 7px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .hidden { display: none !important; }
+
+    .diagnostics {
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      width: min(560px, calc(100vw - 32px));
+      max-height: 42vh;
+      overflow: auto;
+      background: #111827;
+      color: #d1d5db;
+      border-radius: 12px;
+      box-shadow: 0 20px 50px rgba(0,0,0,.3);
+      z-index: 20;
+      padding: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 11px;
+    }
+
+    .diagnostics-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      color: white;
+    }
+
+    .diagnostics button {
+      padding: 4px 7px;
+      background: #374151;
+      color: white;
+    }
+
+    @media (max-width: 1050px) {
+      .app-header {
+        grid-template-columns: 190px 1fr;
+        height: auto;
+      }
+      .header-actions {
+        grid-column: 1 / -1;
+        justify-content: flex-start;
+      }
+      .status-bar { height: auto; min-height: 32px; }
+      .app-main {
+        height: calc(100vh - 151px);
+        grid-template-columns: 220px 1fr 330px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <h1>DevNotebook AI</h1>
+      <small>Software document assistant</small>
+    </div>
+
+    <div class="api-row">
+      <div class="api-input-wrap">
+        <input id="apiKey" type="password" autocomplete="off" placeholder="Paste your Gemini API key" aria-label="Gemini API key" />
+        <span id="apiIndicator" title="API key status">⚪</span>
+      </div>
+      <button id="validateBtn" type="button" class="btn-success">Validate Key</button>
+    </div>
+
+    <div class="header-actions">
+      <button id="presentationBtn" type="button" class="btn-primary" disabled>Create Presentation</button>
+      <button id="newUploadsBtn" type="button" class="btn-warning">New Uploads</button>
+      <button id="diagnosticsBtn" type="button" class="btn-secondary">Diagnostics</button>
+    </div>
+  </header>
+
+  <div id="statusBar" class="status-bar">
+    Enter and validate a Gemini API key to enable PDF uploads.
+  </div>
+
+  <main class="app-main">
+    <section class="panel documents-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Documents</h2>
+          <small id="documentCount">0 uploaded</small>
+        </div>
+      </div>
+
+      <div id="uploadBox" class="upload-box">
+        <p><strong>Upload PDF documents</strong></p>
+        <button id="chooseFilesBtn" type="button" class="btn-primary" disabled>Choose PDF Files</button>
+        <input id="pdfInput" type="file" multiple accept="application/pdf,.pdf" />
+        <small>Multiple files supported</small>
+      </div>
+
+      <div id="fileList" class="file-list"></div>
+    </section>
+
+    <section class="panel viewer-panel">
+      <div class="viewer-toolbar">
+        <div id="viewerTitle" class="viewer-title">No document selected</div>
+        <div class="viewer-controls">
+          <button id="prevPageBtn" type="button" class="btn-secondary" disabled>◀</button>
+          <span id="pageInfo">Page 0 / 0</span>
+          <button id="nextPageBtn" type="button" class="btn-secondary" disabled>▶</button>
+          <button id="zoomOutBtn" type="button" class="btn-secondary" disabled>−</button>
+          <button id="zoomInBtn" type="button" class="btn-secondary" disabled>+</button>
+        </div>
+      </div>
+
+      <div id="viewerBody" class="viewer-body">
+        <div id="viewerPlaceholder" class="viewer-placeholder">
+          <h3 style="margin-top:0">PDF Viewer</h3>
+          <p style="margin-bottom:0">Validate the Gemini key, upload PDFs, then select a document.</p>
+        </div>
+        <canvas id="pdfCanvas"></canvas>
+      </div>
+    </section>
+
+    <section class="panel chat-panel">
+      <div class="panel-header">
+        <div>
+          <h2>Ask DevNotebook</h2>
+          <small id="modelLabel">Gemini model not selected</small>
+        </div>
+      </div>
+
+      <div id="chatMessages" class="chat-messages"></div>
+
+      <div class="quick-actions">
+        <button type="button" data-prompt="Summarize all uploaded documents.">Summarize</button>
+        <button type="button" data-prompt="List the main software modules, features, and integrations.">Modules</button>
+        <button type="button" data-prompt="Generate Agile user stories with acceptance criteria from the documents.">User Stories</button>
+        <button type="button" data-prompt="Generate UAT test cases in a clear table-like format.">UAT Cases</button>
+      </div>
+
+      <div class="chat-compose">
+        <textarea id="questionInput" placeholder="Ask a question about the uploaded PDFs..." disabled></textarea>
+        <div class="compose-actions">
+          <small>Ctrl + Enter to send</small>
+          <button id="sendBtn" type="button" class="btn-primary" disabled>Send</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <aside id="diagnosticsPanel" class="diagnostics hidden">
+    <div class="diagnostics-head">
+      <strong>Diagnostics</strong>
+      <button id="closeDiagnosticsBtn" type="button">Close</button>
+    </div>
+    <div id="diagnosticsContent">No errors recorded.</div>
+  </aside>
+
+  <!-- Stable classic browser build. Avoids the module/global problems from PDF.js v4+. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.9.0/dist/pptxgen.bundle.js"></script>
+
+  <script>
+  (function () {
+    "use strict";
+
+    const state = {
+      apiKey: "",
+      modelId: "",
+      documents: [],
+      currentDocumentIndex: -1,
+      currentPage: 1,
+      zoom: 1.2,
+      rendering: false,
+      pendingPage: null,
+      chatHistory: [],
+      diagnostics: []
+    };
+
+    const el = {};
+
+    function byId(id) {
+      return document.getElementById(id);
+    }
+
+    function initElements() {
+      [
+        "apiKey", "apiIndicator", "validateBtn", "presentationBtn", "newUploadsBtn",
+        "diagnosticsBtn", "statusBar", "uploadBox", "chooseFilesBtn", "pdfInput",
+        "documentCount", "fileList", "viewerTitle", "prevPageBtn", "pageInfo",
+        "nextPageBtn", "zoomOutBtn", "zoomInBtn", "viewerBody", "viewerPlaceholder",
+        "pdfCanvas", "modelLabel", "chatMessages", "questionInput", "sendBtn",
+        "diagnosticsPanel", "closeDiagnosticsBtn", "diagnosticsContent"
+      ].forEach(function (id) {
+        el[id] = byId(id);
+      });
+    }
+
+    function setStatus(message, type) {
+      el.statusBar.textContent = message;
+      el.statusBar.className = "status-bar" + (type ? " " + type : "");
+    }
+
+    function logDiagnostic(label, error) {
+      const detail = error && error.stack ? error.stack : String(error || "Unknown error");
+      const entry = new Date().toLocaleTimeString() + " — " + label + "\n" + detail;
+      state.diagnostics.unshift(entry);
+      el.diagnosticsContent.textContent = state.diagnostics.join("\n\n------------------------------\n\n");
+      console.error(label, error);
+    }
+
+    function friendlyApiError(data, fallback) {
+      if (data && data.error && data.error.message) {
+        return data.error.message;
+      }
+      return fallback;
+    }
+
+    function escapeFileName(name) {
+      return String(name || "Presentation")
+        .replace(/[\\/:*?"<>|]+/g, "-")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 80) || "DevNotebook-Presentation";
+    }
+
+    function formatBytes(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return "0 KB";
+      const units = ["B", "KB", "MB", "GB"];
+      const index = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+      return (bytes / Math.pow(1024, index)).toFixed(index === 0 ? 0 : 1) + " " + units[index];
+    }
+
+    function addMessage(role, text, isError) {
+      const box = document.createElement("div");
+      box.className = "message " + role + (isError ? " error" : "");
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = role === "user" ? "You" : "Gemini";
+
+      const body = document.createElement("div");
+      body.textContent = text;
+
+      box.appendChild(label);
+      box.appendChild(body);
+      el.chatMessages.appendChild(box);
+      el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
+      return box;
+    }
+
+    function addLoadingMessage(text) {
+      const box = document.createElement("div");
+      box.className = "message assistant";
+
+      const label = document.createElement("span");
+      label.className = "label";
+      label.textContent = "Gemini";
+
+      const body = document.createElement("div");
+      const spinner = document.createElement("span");
+      spinner.className = "loader";
+      body.appendChild(spinner);
+      body.appendChild(document.createTextNode(text));
+
+      box.appendChild(label);
+      box.appendChild(body);
+      el.chatMessages.appendChild(box);
+      el.chatMessages.scrollTop = el.chatMessages.scrollHeight;
+      return box;
+    }
+
+    function setBusy(button, busy, busyText, idleText) {
+      button.disabled = busy;
+      button.textContent = busy ? busyText : idleText;
+    }
+
+    function enableUploadAndChat() {
+      el.chooseFilesBtn.disabled = false;
+      el.questionInput.disabled = state.documents.length === 0;
+      el.sendBtn.disabled = state.documents.length === 0;
+      el.presentationBtn.disabled = state.documents.length === 0;
+    }
+
+    function resetDocumentWorkspace() {
+      state.documents.forEach(function (doc) {
+        try {
+          if (doc.pdf && typeof doc.pdf.destroy === "function") doc.pdf.destroy();
+        } catch (_) {}
+      });
+
+      state.documents = [];
+      state.currentDocumentIndex = -1;
+      state.currentPage = 1;
+      state.zoom = 1.2;
+      state.chatHistory = [];
+
+      el.pdfInput.value = "";
+      el.fileList.replaceChildren();
+      el.documentCount.textContent = "0 uploaded";
+      el.viewerTitle.textContent = "No document selected";
+      el.pageInfo.textContent = "Page 0 / 0";
+      el.pdfCanvas.style.display = "none";
+      el.viewerPlaceholder.style.display = "block";
+      el.prevPageBtn.disabled = true;
+      el.nextPageBtn.disabled = true;
+      el.zoomInBtn.disabled = true;
+      el.zoomOutBtn.disabled = true;
+      el.questionInput.value = "";
+      el.questionInput.disabled = true;
+      el.sendBtn.disabled = true;
+      el.presentationBtn.disabled = true;
+      el.chatMessages.replaceChildren();
+
+      addMessage("assistant", "Upload one or more PDFs, then ask questions about their content.");
+      setStatus(
+        state.apiKey
+          ? "Gemini is connected. Upload PDF documents to begin."
+          : "Enter and validate a Gemini API key to enable PDF uploads.",
+        state.apiKey ? "success" : ""
+      );
+    }
+
+    async function validateApiKey() {
+      const key = el.apiKey.value.trim();
+
+      if (!key) {
+        el.apiIndicator.textContent = "🔴";
+        setStatus("Please enter a Gemini API key.", "error");
+        return;
+      }
+
+      setBusy(el.validateBtn, true, "Checking…", "Validate Key");
+      el.apiIndicator.textContent = "🟡";
+      setStatus("Validating the Gemini API key and checking available models…", "warning");
+
+      try {
+        const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models", {
+          method: "GET",
+          headers: {
+            "x-goog-api-key": key
+          }
+        });
+
+        const data = await response.json().catch(function () { return {}; });
+
+        if (!response.ok) {
+          throw new Error(friendlyApiError(data, "Gemini API key validation failed."));
+        }
+
+        const models = Array.isArray(data.models) ? data.models : [];
+        const usable = models.filter(function (model) {
+          return Array.isArray(model.supportedGenerationMethods) &&
+            model.supportedGenerationMethods.includes("generateContent");
+        });
+
+        const preferences = [
+          "models/gemini-2.5-flash",
+          "models/gemini-2.5-flash-lite",
+          "models/gemini-3.5-flash",
+          "models/gemini-3-flash-preview"
+        ];
+
+        let selected = "";
+        for (const preferred of preferences) {
+          if (usable.some(function (model) { return model.name === preferred; })) {
+            selected = preferred;
+            break;
+          }
+        }
+
+        if (!selected && usable.length > 0) {
+          selected = usable[0].name;
+        }
+
+        if (!selected) {
+          throw new Error("The API key is valid, but no generateContent model is available for this project.");
+        }
+
+        state.apiKey = key;
+        state.modelId = selected.replace(/^models\//, "");
+        el.apiIndicator.textContent = "🟢";
+        el.modelLabel.textContent = state.modelId;
+        enableUploadAndChat();
+        setStatus("Gemini connected successfully using " + state.modelId + ".", "success");
+      } catch (error) {
+        state.apiKey = "";
+        state.modelId = "";
+        el.apiIndicator.textContent = "🔴";
+        el.modelLabel.textContent = "Gemini model not selected";
+        el.chooseFilesBtn.disabled = true;
+        setStatus("Gemini validation failed: " + error.message, "error");
+        logDiagnostic("Gemini API validation failed", error);
+      } finally {
+        setBusy(el.validateBtn, false, "Checking…", "Validate Key");
+      }
+    }
+
+    function tokenize(text) {
+      return String(text || "")
+        .toLowerCase()
+        .match(/[a-z0-9_#.+-]{2,}/g) || [];
+    }
+
+    function splitIntoChunks(text, fileName, pageNumber) {
+      const cleaned = String(text || "").replace(/\s+/g, " ").trim();
+      if (!cleaned) return [];
+
+      const maxLength = 1800;
+      const overlap = 220;
+      const chunks = [];
+      let start = 0;
+
+      while (start < cleaned.length) {
+        let end = Math.min(start + maxLength, cleaned.length);
+
+        if (end < cleaned.length) {
+          const lastBoundary = Math.max(
+            cleaned.lastIndexOf(". ", end),
+            cleaned.lastIndexOf("; ", end),
+            cleaned.lastIndexOf(" ", end)
+          );
+          if (lastBoundary > start + 900) end = lastBoundary + 1;
+        }
+
+        chunks.push({
+          fileName: fileName,
+          pageNumber: pageNumber,
+          text: cleaned.slice(start, end)
+        });
+
+        if (end >= cleaned.length) break;
+        start = Math.max(0, end - overlap);
+      }
+
+      return chunks;
+    }
+
+    async function processFiles(fileList) {
+      if (!state.apiKey) {
+        setStatus("Validate the Gemini API key before uploading files.", "error");
+        return;
+      }
+
+      const files = Array.from(fileList || []).filter(function (file) {
+        return file.type === "application/pdf" || /\.pdf$/i.test(file.name);
+      });
+
+      if (!files.length) {
+        setStatus("Please choose one or more PDF files.", "error");
+        return;
+      }
+
+      el.chooseFilesBtn.disabled = true;
+      setStatus("Reading and indexing " + files.length + " PDF file(s)…", "warning");
+
+      for (const file of files) {
+        const duplicate = state.documents.some(function (doc) {
+          return doc.name === file.name && doc.size === file.size;
+        });
+        if (duplicate) continue;
+
+        const placeholder = {
+          name: file.name,
+          size: file.size,
+          status: "processing",
+          pages: [],
+          chunks: [],
+          pdf: null,
+          error: ""
+        };
+        state.documents.push(placeholder);
+        renderFileList();
+
+        try {
+          const arrayBuffer = await file.arrayBuffer();
+          const loadingTask = window.pdfjsLib.getDocument({
+            data: new Uint8Array(arrayBuffer)
+          });
+          const pdf = await loadingTask.promise;
+
+          placeholder.pdf = pdf;
+          placeholder.pageCount = pdf.numPages;
+
+          for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+            setStatus(
+              "Indexing " + file.name + " — page " + pageNumber + " of " + pdf.numPages + "…",
+              "warning"
+            );
+
+            const page = await pdf.getPage(pageNumber);
+            const textContent = await page.getTextContent();
+            const pageText = textContent.items.map(function (item) {
+              return item.str;
+            }).join(" ").replace(/\s+/g, " ").trim();
+
+            placeholder.pages.push({
+              pageNumber: pageNumber,
+              text: pageText
+            });
+
+            placeholder.chunks.push.apply(
+              placeholder.chunks,
+              splitIntoChunks(pageText, file.name, pageNumber)
+            );
+          }
+
+          placeholder.status = "ready";
+          if (placeholder.chunks.length === 0) {
+            placeholder.error = "No selectable text found. This may be a scanned PDF.";
+          }
+        } catch (error) {
+          placeholder.status = "error";
+          placeholder.error = error.message || "Unable to read PDF.";
+          logDiagnostic("Failed to process " + file.name, error);
+        }
+
+        renderFileList();
+      }
+
+      el.chooseFilesBtn.disabled = false;
+      el.documentCount.textContent = state.documents.length + " uploaded";
+      el.questionInput.disabled = state.documents.every(function (doc) { return doc.status !== "ready"; });
+      el.sendBtn.disabled = el.questionInput.disabled;
+      el.presentationBtn.disabled = el.questionInput.disabled;
+
+      if (state.currentDocumentIndex < 0) {
+        const firstReadyIndex = state.documents.findIndex(function (doc) {
+          return doc.status === "ready";
+        });
+        if (firstReadyIndex >= 0) {
+          await selectDocument(firstReadyIndex);
+        }
+      }
+
+      const readyCount = state.documents.filter(function (doc) { return doc.status === "ready"; }).length;
+      const totalChunks = state.documents.reduce(function (sum, doc) {
+        return sum + doc.chunks.length;
+      }, 0);
+
+      if (readyCount > 0) {
+        setStatus(
+          readyCount + " PDF file(s) ready. Indexed " + totalChunks + " searchable text chunks.",
+          "success"
+        );
+      } else {
+        setStatus("No PDF could be indexed. Open Diagnostics for details.", "error");
+      }
+    }
+
+    function renderFileList() {
+      el.fileList.replaceChildren();
+
+      state.documents.forEach(function (doc, index) {
+        const item = document.createElement("div");
+        item.className = "file-item" + (index === state.currentDocumentIndex ? " active" : "");
+
+        const name = document.createElement("div");
+        name.className = "file-name";
+        name.textContent = "📄 " + doc.name;
+
+        const meta = document.createElement("div");
+        meta.className = "file-meta";
+
+        if (doc.status === "processing") {
+          meta.textContent = "Processing…";
+        } else if (doc.status === "ready") {
+          meta.textContent =
+            (doc.pageCount || 0) + " pages • " +
+            doc.chunks.length + " chunks • " +
+            formatBytes(doc.size);
+        } else {
+          meta.textContent = formatBytes(doc.size);
+        }
+
+        item.appendChild(name);
+        item.appendChild(meta);
+
+        if (doc.error) {
+          const error = document.createElement("div");
+          error.className = "file-error";
+          error.textContent = doc.error;
+          item.appendChild(error);
+        }
+
+        item.addEventListener("click", function () {
+          if (doc.status === "ready") selectDocument(index);
+        });
+
+        el.fileList.appendChild(item);
+      });
+
+      el.documentCount.textContent = state.documents.length + " uploaded";
+    }
+
+    async function selectDocument(index) {
+      const doc = state.documents[index];
+      if (!doc || doc.status !== "ready" || !doc.pdf) return;
+
+      state.currentDocumentIndex = index;
+      state.currentPage = 1;
+      state.zoom = 1.2;
+
+      el.viewerTitle.textContent = doc.name;
+      el.viewerPlaceholder.style.display = "none";
+      el.pdfCanvas.style.display = "block";
+      el.prevPageBtn.disabled = false;
+      el.nextPageBtn.disabled = false;
+      el.zoomInBtn.disabled = false;
+      el.zoomOutBtn.disabled = false;
+
+      renderFileList();
+      await renderCurrentPage();
+    }
+
+    async function renderCurrentPage() {
+      const doc = state.documents[state.currentDocumentIndex];
+      if (!doc || !doc.pdf) return;
+
+      if (state.rendering) {
+        state.pendingPage = state.currentPage;
+        return;
+      }
+
+      state.rendering = true;
+
+      try {
+        const page = await doc.pdf.getPage(state.currentPage);
+        const viewport = page.getViewport({ scale: state.zoom });
+        const canvas = el.pdfCanvas;
+        const context = canvas.getContext("2d", { alpha: false });
+        const outputScale = Math.min(window.devicePixelRatio || 1, 2);
+
+        canvas.width = Math.floor(viewport.width * outputScale);
+        canvas.height = Math.floor(viewport.height * outputScale);
+        canvas.style.width = Math.floor(viewport.width) + "px";
+        canvas.style.height = Math.floor(viewport.height) + "px";
+
+        const transform = outputScale !== 1
+          ? [outputScale, 0, 0, outputScale, 0, 0]
+          : null;
+
+        await page.render({
+          canvasContext: context,
+          viewport: viewport,
+          transform: transform
+        }).promise;
+
+        el.pageInfo.textContent = "Page " + state.currentPage + " / " + doc.pdf.numPages;
+        el.prevPageBtn.disabled = state.currentPage <= 1;
+        el.nextPageBtn.disabled = state.currentPage >= doc.pdf.numPages;
+      } catch (error) {
+        setStatus("Unable to render this PDF page: " + error.message, "error");
+        logDiagnostic("PDF page rendering failed", error);
+      } finally {
+        state.rendering = false;
+        if (state.pendingPage !== null) {
+          state.currentPage = state.pendingPage;
+          state.pendingPage = null;
+          renderCurrentPage();
+        }
+      }
+    }
+
+    function movePage(delta) {
+      const doc = state.documents[state.currentDocumentIndex];
+      if (!doc || !doc.pdf) return;
+      const next = Math.min(Math.max(state.currentPage + delta, 1), doc.pdf.numPages);
+      if (next === state.currentPage) return;
+      state.currentPage = next;
+      renderCurrentPage();
+    }
+
+    function changeZoom(delta) {
+      if (state.currentDocumentIndex < 0) return;
+      state.zoom = Math.min(Math.max(state.zoom + delta, 0.55), 2.8);
+      renderCurrentPage();
+    }
+
+    function retrieveRelevantChunks(question, limit, maxCharacters) {
+      const queryTerms = Array.from(new Set(tokenize(question)));
+      const allChunks = [];
+
+      state.documents.forEach(function (doc) {
+        if (doc.status === "ready") {
+          doc.chunks.forEach(function (chunk, order) {
+            let score = 0;
+            const lower = chunk.text.toLowerCase();
+
+            queryTerms.forEach(function (term) {
+              let index = lower.indexOf(term);
+              while (index !== -1) {
+                score += term.length >= 6 ? 4 : 2;
+                index = lower.indexOf(term, index + term.length);
+              }
+            });
+
+            if (queryTerms.length === 0) score = 1;
+            if (order === 0) score += 0.2;
+
+            allChunks.push({
+              score: score,
+              fileName: chunk.fileName,
+              pageNumber: chunk.pageNumber,
+              text: chunk.text
+            });
+          });
+        }
+      });
+
+      allChunks.sort(function (a, b) {
+        return b.score - a.score;
+      });
+
+      const selected = [];
+      let used = 0;
+
+      for (const chunk of allChunks) {
+        if (selected.length >= limit) break;
+        const addition = chunk.text.length + 100;
+        if (used + addition > maxCharacters) continue;
+        selected.push(chunk);
+        used += addition;
+      }
+
+      return selected;
+    }
+
+    function buildContext(question, generous) {
+      const chunks = retrieveRelevantChunks(
+        question,
+        generous ? 28 : 14,
+        generous ? 100000 : 52000
+      );
+
+      return chunks.map(function (chunk, index) {
+        return (
+          "SOURCE " + (index + 1) + "\n" +
+          "File: " + chunk.fileName + "\n" +
+          "Page: " + chunk.pageNumber + "\n" +
+          "Text: " + chunk.text
+        );
+      }).join("\n\n---\n\n");
+    }
+
+    async function callGemini(prompt, jsonMode) {
+      if (!state.apiKey || !state.modelId) {
+        throw new Error("Gemini is not connected.");
+      }
+
+      const endpoint =
+        "https://generativelanguage.googleapis.com/v1beta/models/" +
+        encodeURIComponent(state.modelId) +
+        ":generateContent";
+
+      const body = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: prompt }]
+          }
+        ],
+        generationConfig: {
+          temperature: jsonMode ? 0.2 : 0.25,
+          maxOutputTokens: jsonMode ? 8192 : 4096
+        }
+      };
+
+      if (jsonMode) {
+        body.generationConfig.responseMimeType = "application/json";
+      }
+
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-goog-api-key": state.apiKey
+        },
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json().catch(function () { return {}; });
+
+      if (!response.ok) {
+        throw new Error(friendlyApiError(data, "Gemini request failed with status " + response.status + "."));
+      }
+
+      const parts =
+        data &&
+        Array.isArray(data.candidates) &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        Array.isArray(data.candidates[0].content.parts)
+          ? data.candidates[0].content.parts
+          : [];
+
+      const text = parts
+        .map(function (part) { return part.text || ""; })
+        .join("")
+        .trim();
+
+      if (!text) {
+        const reason =
+          data &&
+          data.candidates &&
+          data.candidates[0] &&
+          data.candidates[0].finishReason
+            ? data.candidates[0].finishReason
+            : "unknown reason";
+        throw new Error("Gemini returned no text. Finish reason: " + reason + ".");
+      }
+
+      return text;
+    }
+
+    async function askQuestion(prefilledQuestion) {
+      const question = String(prefilledQuestion || el.questionInput.value || "").trim();
+      if (!question) return;
+
+      if (state.documents.every(function (doc) { return doc.status !== "ready"; })) {
+        setStatus("Upload at least one readable PDF before asking a question.", "error");
+        return;
+      }
+
+      el.questionInput.value = "";
+      addMessage("user", question);
+      const loading = addLoadingMessage("Reading the indexed document sections…");
+      el.sendBtn.disabled = true;
+
+      try {
+        const context = buildContext(question, false);
+        if (!context) {
+          throw new Error("No searchable text was extracted from the uploaded PDFs.");
+        }
+
+        const recentHistory = state.chatHistory.slice(-4).map(function (entry) {
+          return entry.role.toUpperCase() + ": " + entry.text;
+        }).join("\n");
+
+        const prompt =
+          "You are DevNotebook AI, a software documentation assistant.\n" +
+          "Answer the user's question using only the supplied PDF context.\n" +
+          "When stating document facts, cite the file and page using this exact style: [FileName.pdf, page N].\n" +
+          "If the answer is not found in the context, clearly say that it is not available in the uploaded documents.\n" +
+          "For code questions, provide practical code only when the documents support it.\n" +
+          "Do not invent APIs, requirements, classes, or values.\n\n" +
+          (recentHistory ? "RECENT CHAT:\n" + recentHistory + "\n\n" : "") +
+          "PDF CONTEXT:\n" + context + "\n\n" +
+          "USER QUESTION:\n" + question;
+
+        const answer = await callGemini(prompt, false);
+        loading.remove();
+        addMessage("assistant", answer);
+
+        state.chatHistory.push({ role: "user", text: question });
+        state.chatHistory.push({ role: "assistant", text: answer });
+        setStatus("Answer generated successfully using " + state.modelId + ".", "success");
+      } catch (error) {
+        loading.remove();
+        addMessage("assistant", "Unable to generate an answer: " + error.message, true);
+        setStatus("Gemini request failed: " + error.message, "error");
+        logDiagnostic("Question request failed", error);
+      } finally {
+        el.sendBtn.disabled = false;
+      }
+    }
+
+    function parsePresentationJson(raw) {
+      const cleaned = String(raw || "")
+        .replace(/^```json\s*/i, "")
+        .replace(/^```\s*/i, "")
+        .replace(/\s*```$/i, "")
+        .trim();
+
+      const data = JSON.parse(cleaned);
+
+      if (!data || !Array.isArray(data.slides) || data.slides.length === 0) {
+        throw new Error("Gemini did not return a valid slides array.");
+      }
+
+      return {
+        title: String(data.title || "Software Documentation Overview"),
+        subtitle: String(data.subtitle || "Generated from uploaded PDF documents"),
+        slides: data.slides.slice(0, 10).map(function (slide, index) {
+          return {
+            title: String(slide.title || "Slide " + (index + 1)),
+            bullets: Array.isArray(slide.bullets)
+              ? slide.bullets.map(function (item) { return String(item); }).slice(0, 7)
+              : []
+          };
+        })
+      };
+    }
+
+    async function generatePresentation() {
+      if (typeof window.PptxGenJS !== "function") {
+        const error = new Error("PptxGenJS did not load. Check internet access or Content Security Policy.");
+        setStatus(error.message, "error");
+        logDiagnostic("Presentation library unavailable", error);
+        return;
+      }
+
+      const loading = addLoadingMessage("Creating presentation content from the uploaded documents…");
+      setBusy(el.presentationBtn, true, "Creating…", "Create Presentation");
+
+      try {
+        const context = buildContext(
+          "Create a comprehensive software project presentation covering overview, requirements, architecture, modules, APIs, integrations, security, risks, and recommendations.",
+          true
+        );
+
+        if (!context) {
+          throw new Error("No searchable PDF text is available for presentation generation.");
+        }
+
+        const prompt =
+          "Create a professional PowerPoint outline using only the supplied PDF context.\n" +
+          "Return valid JSON only, with no markdown fences.\n" +
+          "Use this structure exactly:\n" +
+          '{"title":"Presentation title","subtitle":"Short subtitle","slides":[{"title":"Slide title","bullets":["Bullet one","Bullet two"]}]}\n' +
+          "Requirements:\n" +
+          "- Produce 6 to 9 content slides.\n" +
+          "- Each slide must have 3 to 6 concise bullets.\n" +
+          "- Focus on software project information found in the documents.\n" +
+          "- Do not invent missing information.\n\n" +
+          "PDF CONTEXT:\n" + context;
+
+        const raw = await callGemini(prompt, true);
+        const deck = parsePresentationJson(raw);
+
+        const pptx = new window.PptxGenJS();
+        pptx.layout = "LAYOUT_WIDE";
+        pptx.author = "DevNotebook AI";
+        pptx.company = "DevNotebook AI";
+        pptx.subject = "Generated from uploaded software documents";
+        pptx.title = deck.title;
+        pptx.lang = "en-US";
+        pptx.theme = {
+          headFontFace: "Aptos Display",
+          bodyFontFace: "Aptos",
+          lang: "en-US"
+        };
+
+        let slide = pptx.addSlide();
+        slide.background = { color: "172033" };
+        slide.addText(deck.title, {
+          x: 0.8, y: 1.55, w: 11.7, h: 1.0,
+          fontFace: "Aptos Display", fontSize: 28, bold: true,
+          color: "FFFFFF", align: "center", margin: 0.04
+        });
+        slide.addText(deck.subtitle, {
+          x: 1.4, y: 2.75, w: 10.5, h: 0.65,
+          fontFace: "Aptos", fontSize: 16,
+          color: "B9C7DB", align: "center", margin: 0.03
+        });
+        slide.addText("Generated by DevNotebook AI", {
+          x: 0.8, y: 6.7, w: 11.7, h: 0.3,
+          fontSize: 9, color: "93A4BD", align: "center", margin: 0
+        });
+
+        deck.slides.forEach(function (item, index) {
+          const contentSlide = pptx.addSlide();
+          contentSlide.background = { color: "F7F9FC" };
+
+          contentSlide.addShape(pptx.ShapeType.rect, {
+            x: 0, y: 0, w: 13.333, h: 0.72,
+            line: { color: "172033", transparency: 100 },
+            fill: { color: "172033" }
+          });
+
+          contentSlide.addText(item.title, {
+            x: 0.55, y: 0.16, w: 11.8, h: 0.38,
+            fontFace: "Aptos Display", fontSize: 20,
+            bold: true, color: "FFFFFF", margin: 0
+          });
+
+          const bulletText = item.bullets.map(function (bullet) {
+            return "• " + bullet;
+          }).join("\n\n");
+
+          contentSlide.addText(bulletText || "• No additional details were available in the uploaded documents.", {
+            x: 0.85, y: 1.15, w: 11.65, h: 5.5,
+            fontFace: "Aptos", fontSize: 18,
+            color: "1E293B", breakLine: false,
+            valign: "top", margin: 0.08,
+            paraSpaceAfterPt: 9
+          });
+
+          contentSlide.addText(String(index + 1), {
+            x: 12.45, y: 7.05, w: 0.35, h: 0.18,
+            fontSize: 8, color: "64748B", align: "right", margin: 0
+          });
+        });
+
+        const fileName = escapeFileName(deck.title) + ".pptx";
+        await pptx.writeFile({ fileName: fileName });
+
+        loading.remove();
+        addMessage("assistant", "Presentation created and downloaded as " + fileName + ".");
+        setStatus("Presentation downloaded successfully.", "success");
+      } catch (error) {
+        loading.remove();
+        addMessage("assistant", "Unable to create the presentation: " + error.message, true);
+        setStatus("Presentation generation failed: " + error.message, "error");
+        logDiagnostic("Presentation generation failed", error);
+      } finally {
+        setBusy(el.presentationBtn, false, "Creating…", "Create Presentation");
+        el.presentationBtn.disabled = state.documents.every(function (doc) { return doc.status !== "ready"; });
+      }
+    }
+
+    function bindEvents() {
+      el.validateBtn.addEventListener("click", validateApiKey);
+
+      el.apiKey.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") validateApiKey();
+      });
+
+      el.chooseFilesBtn.addEventListener("click", function () {
+        el.pdfInput.click();
+      });
+
+      el.pdfInput.addEventListener("change", function (event) {
+        processFiles(event.target.files);
+      });
+
+      ["dragenter", "dragover"].forEach(function (name) {
+        el.uploadBox.addEventListener(name, function (event) {
+          event.preventDefault();
+          if (!el.chooseFilesBtn.disabled) el.uploadBox.classList.add("dragging");
+        });
+      });
+
+      ["dragleave", "drop"].forEach(function (name) {
+        el.uploadBox.addEventListener(name, function (event) {
+          event.preventDefault();
+          el.uploadBox.classList.remove("dragging");
+        });
+      });
+
+      el.uploadBox.addEventListener("drop", function (event) {
+        if (!el.chooseFilesBtn.disabled) {
+          processFiles(event.dataTransfer.files);
+        }
+      });
+
+      el.prevPageBtn.addEventListener("click", function () { movePage(-1); });
+      el.nextPageBtn.addEventListener("click", function () { movePage(1); });
+      el.zoomOutBtn.addEventListener("click", function () { changeZoom(-0.15); });
+      el.zoomInBtn.addEventListener("click", function () { changeZoom(0.15); });
+
+      el.sendBtn.addEventListener("click", function () { askQuestion(); });
+
+      el.questionInput.addEventListener("keydown", function (event) {
+        if (event.ctrlKey && event.key === "Enter") {
+          event.preventDefault();
+          askQuestion();
+        }
+      });
+
+      document.querySelectorAll("[data-prompt]").forEach(function (button) {
+        button.addEventListener("click", function () {
+          if (!el.questionInput.disabled) {
+            el.questionInput.value = button.getAttribute("data-prompt") || "";
+            askQuestion(el.questionInput.value);
+          }
+        });
+      });
+
+      el.presentationBtn.addEventListener("click", generatePresentation);
+      el.newUploadsBtn.addEventListener("click", resetDocumentWorkspace);
+
+      el.diagnosticsBtn.addEventListener("click", function () {
+        el.diagnosticsPanel.classList.toggle("hidden");
+      });
+
+      el.closeDiagnosticsBtn.addEventListener("click", function () {
+        el.diagnosticsPanel.classList.add("hidden");
+      });
+
+      window.addEventListener("error", function (event) {
+        logDiagnostic("Unhandled browser error", event.error || event.message);
+      });
+
+      window.addEventListener("unhandledrejection", function (event) {
+        logDiagnostic("Unhandled promise rejection", event.reason);
+      });
+    }
+
+    function dependencyCheck() {
+      if (!window.pdfjsLib) {
+        const error = new Error("PDF.js did not load. Check internet access or Content Security Policy.");
+        setStatus(error.message, "error");
+        logDiagnostic("PDF.js unavailable", error);
+        return false;
+      }
+
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+
+      if (location.protocol === "file:") {
+        setStatus(
+          "The page is running from file://. PDF reading may work, but Gemini requests can be blocked by browser security. Use localhost for reliable operation.",
+          "warning"
+        );
+      }
+
+      return true;
+    }
+
+    function start() {
+      initElements();
+      bindEvents();
+      addMessage("assistant", "Validate your Gemini API key, upload PDF documents, and ask questions about them.");
+      dependencyCheck();
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", start);
+    } else {
+      start();
+    }
+  })();
+  </script>
+</body>
+</html>
